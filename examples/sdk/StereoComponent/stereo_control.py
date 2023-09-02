@@ -25,3 +25,4 @@ with OakCamera() as oak:
             stereo.control.send_controls({'postprocessing': {'decimation': {'factor': 2}}})
         if key == ord('3'):
             stereo.control.send_controls({'postprocessing': {'decimation': {'factor': 3}}})
+i
