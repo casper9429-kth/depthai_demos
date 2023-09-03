@@ -31,7 +31,8 @@ monoRight.setCamera("right")
 # Create a node that will produce the depth map (using disparity output as it's easier to visualize depth this way)
 depth.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 # Options: MEDIAN_OFF, KERNEL_3x3, KERNEL_5x5, KERNEL_7x7 (default)
-depth.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
+#depth.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
+#depth.initialConfig.setBilateralFilterSigma(65535)
 depth.setLeftRightCheck(lr_check)
 depth.setExtendedDisparity(extended_disparity)
 depth.setSubpixel(subpixel)
@@ -46,6 +47,7 @@ config.postProcessing.spatialFilter.numIterations = 1
 config.postProcessing.thresholdFilter.minRange = 400
 config.postProcessing.thresholdFilter.maxRange = 15000
 config.postProcessing.decimationFilter.decimationFactor = 1
+# sigma filter
 depth.initialConfig.set(config)
 
 # Linking
