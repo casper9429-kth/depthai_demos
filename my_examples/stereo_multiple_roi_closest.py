@@ -20,7 +20,7 @@ monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
 depth = pipeline.create(dai.node.StereoDepth)
 depth.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 # Options: MEDIAN_OFF, KERNEL_3x3, KERNEL_5x5, KERNEL_7x7 (default)
-depth.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
+#depth.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
 #depth.initialConfig.setBilateralFilterSigma(65535)
 depth.setLeftRightCheck(True)
 depth.setExtendedDisparity(False)
@@ -90,6 +90,7 @@ for n in range(N):
         config.depthThresholds.lowerThreshold = 300
         config.depthThresholds.upperThreshold = 10000
         config.roi = dai.Rect(lowerLeft, upperRight)
+        config.calculationAlgorithm = dai.SpatialLocationCalculatorAlgorithm.MEDIAN
         spatialLocationCalculator.initialConfig.addROI(config)
 
 # Connect to device and start pipeline
