@@ -10,10 +10,10 @@ pipeline = dai.Pipeline()
 
 # Define sources and set resolutions and source
 monoLeft = pipeline.create(dai.node.MonoCamera)
-monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
+monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
 monoRight = pipeline.create(dai.node.MonoCamera)
-monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
+monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
 
 # Create StereoDepth node and set defaults
@@ -98,6 +98,7 @@ with dai.Device(pipeline) as device:
     # Get output queues
     qDepth = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
     qSpatialData = device.getOutputQueue(name="spatialData", maxSize=4, blocking=False)
+    device.setIrLaserDotProjectorBrightness(700)
 
     # Set Font
     text_color = (255, 255, 255)
@@ -128,7 +129,6 @@ with dai.Device(pipeline) as device:
             xmax = int(roi.bottomRight().x)
             ymin = int(roi.topLeft().y)
             ymax = int(roi.bottomRight().y)
-            print(depthData.spatialCoordinates.z)
             coods = depthData.spatialCoordinates
             distance = np.sqrt(coods.x**2 + coods.y**2 + coods.z**2) 
             color_scale = np.interp(distance, (min_depth, max_depth), (0, 255)).astype(np.uint8)
