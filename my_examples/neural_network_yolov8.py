@@ -98,6 +98,7 @@ with dai.Device(pipeline) as device:
         normVals[::2] = frame.shape[1]
         return (np.clip(np.array(bbox), 0, 1) * normVals).astype(int)
 
+    # 
     
     while True:
         inRgb = qRgb.get()

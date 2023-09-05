@@ -118,6 +118,14 @@ spatialDetectionNetwork.setNumInferenceThreads(2)
 spatialDetectionNetwork.input.setBlocking(False)
 
 
+# Create spatialLocationCalculator node and set defaults
+spatialLocationCalculator = pipeline.create(dai.node.SpatialLocationCalculator)
+spatialLocationCalculator.setWaitForConfigInput(False)
+spatialLocationCalculator.inputDepth.setBlocking(False)
+xoutSpatialData = pipeline.create(dai.node.XLinkOut)
+xoutSpatialData.setStreamName("gridData")
+
+
 
 # Linking
 monoLeft.out.link(stereo.left)
@@ -135,6 +143,37 @@ stereo.depth.link(spatialDetectionNetwork.inputDepth)
 spatialDetectionNetwork.passthroughDepth.link(xoutDepth.input)
 spatialDetectionNetwork.outNetwork.link(nnNetworkOut.input)
 
+spatialLocationCalculator.out.link(xoutSpatialData.input)
+stereo.depth.link(spatialLocationCalculator.inputDepth)
+
+# Set up ROI's: NxM (N = horizontal, M = vertical)
+N = 7
+M = 7
+safty_factor = 0.5
+for n in range(N):
+    for m in range(M):        
+        # If n = 0, set left_offset to 0.1/N (10% of the image width), otherwise set it to 0
+        left_offset = (safty_factor)/N if n == 0 else 0
+        # If m = 0, set top_offset to 0.1/M (10% of the image height), otherwise set it to 0
+        top_offset = (safty_factor)/M if m == 0 else 0
+        # If n = N-1, set right_offset to 0.1/N (10% of the image width), otherwise set it to 0
+        right_offset = (safty_factor)/N if n == N-1 else 0
+        # If m = M-1, set bottom_offset to 0.1/M (10% of the image height), otherwise set it to 0
+        bottom_offset = (safty_factor)/M if m == M-1 else 0
+        
+        # Set ROI
+        lowerLeft = dai.Point2f(left_offset + (n)/N, top_offset + (m)/M)
+        upperRight = dai.Point2f(1 - right_offset - (N-n-1)/N, 1 - bottom_offset - (M-m-1)/M)
+                
+        # lowerLeft = dai.Point2f((n)/N, (m)/M)
+        # upperRight = dai.Point2f((n+1)/N, (m+1)/M)
+        config = dai.SpatialLocationCalculatorConfigData()
+        config.depthThresholds.lowerThreshold = 300
+        config.depthThresholds.upperThreshold = 10000
+        config.calculationAlgorithm = dai.SpatialLocationCalculatorAlgorithm.MEAN
+        config.roi = dai.Rect(lowerLeft, upperRight)
+        spatialLocationCalculator.initialConfig.addROI(config)
+
 
 # Connect to device and start pipeline
 with dai.Device(pipeline) as device:
@@ -146,6 +185,7 @@ with dai.Device(pipeline) as device:
     detectionNNQueue = device.getOutputQueue(name="detections", maxSize=4, blocking=False)
     depthQueue = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
     networkQueue = device.getOutputQueue(name="nnNetwork", maxSize=4, blocking=False)
+    spatialCalcQueue = device.getOutputQueue(name="gridData", maxSize=4, blocking=False)
 
     startTime = time.monotonic()
     counter = 0
@@ -159,6 +199,8 @@ with dai.Device(pipeline) as device:
         inDet = detectionNNQueue.get()
         depth = depthQueue.get()
         inNN = networkQueue.get()
+        gridCells = spatialCalcQueue.get().getSpatialLocations()
+                
 
         if printOutputLayersOnce:
             toPrint = 'Output layer names:'
@@ -221,8 +263,44 @@ with dai.Device(pipeline) as device:
         # cv2.imshow("depth", depthFrameColor)
         #cv2.imshow("rgb", frame)
         # Blend RGB and Depth
-        frame = cv2.addWeighted(frame, 0.7, depthFrameColor, 0.3, 0)
-        cv2.imshow("rgb", frame)
+        frame_blend = cv2.addWeighted(frame, 0.7, depthFrameColor, 0.3, 0)
+        cv2.imshow("rgb", frame_blend)
+
+
+        # Sort grid cells by distance to camera
+        gridCells.sort(key=lambda x: x.spatialCoordinates.z**2 + x.spatialCoordinates.x**2 + x.spatialCoordinates.y**2)
+        # Show grid cells on depth frame
+        for i,depthData in enumerate(gridCells):    
+            roi = depthData.config.roi
+            roi = roi.denormalize(width=depthFrameColor.shape[1], height=depthFrameColor.shape[0])
+            xmin = int(roi.topLeft().x)
+            xmax = int(roi.bottomRight().x)
+            ymin = int(roi.topLeft().y)
+            ymax = int(roi.bottomRight().y)
+            coods = depthData.spatialCoordinates
+            distance = np.sqrt(coods.x**2 + coods.y**2 + coods.z**2) 
+            color_scale = np.interp(distance, (min_depth, max_depth), (0, 255)).astype(np.uint8)
+            color1 = cv2.applyColorMap(src=np.array([[color_scale]]),colormap= cv2.COLORMAP_JET)
+            text_color = color1[0,0,:].tolist()
+            # Inverse color to make it readable on any background
+            text_color = [255 - i for i in text_color]
+            cv2.rectangle(depthFrameColor, (xmin, ymin), (xmax, ymax), text_color, thickness=2)
+            cv2.putText(depthFrameColor, "{:.1f}m".format(distance/1000), (xmin + 10, ymin + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, text_color)
+        cv2.imshow("depth_with_grid", depthFrameColor)
+
+        # Show closest grid cell on frame
+        closest = gridCells[0]
+        roi = closest.config.roi
+        roi = roi.denormalize(width=frame.shape[1], height=frame.shape[0])
+        xmin = int(roi.topLeft().x)
+        xmax = int(roi.bottomRight().x)
+        ymin = int(roi.topLeft().y)
+        ymax = int(roi.bottomRight().y)
+        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, thickness=2)
+        cv2.putText(frame, "Closest grid cell", (xmin + 10, ymin + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color)
+        cv2.imshow("rgb_with_grid", frame)
+
+
 
         if cv2.waitKey(1) == ord('q'):
             break
