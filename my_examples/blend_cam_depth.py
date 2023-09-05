@@ -27,12 +27,13 @@ xout_rgb = pipeline.create(dai.node.XLinkOut)
 xout.setStreamName("depth")
 xout_rgb.setStreamName("rgb")
 # Properties
-rgbCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+rgbCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
+rgbCam.setIspScale(1, 5)
 rgbCam.setFps(30)
-monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
 monoLeft.setCamera("left")
 monoLeft.setFps(30)
-monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
 monoRight.setCamera("right")
 monoRight.setFps(30)
 # For now, RGB needs fixed focus to properly align with depth.
@@ -84,14 +85,12 @@ with dai.Device(pipeline) as device:
     device.setIrFloodLightBrightness(1500)
     # Output queue will be used to get the disparity frames from the outputs defined above
     q = device.getOutputQueue(name="depth", maxSize=1, blocking=False)
-    qRgb = device.getOutputQueue(name="rgb", maxSize=10, blocking=False)
+    qRgb = device.getOutputQueue(name="rgb", maxSize=1, blocking=False)
 
     # Rollig average color for depth map
     min_depth = 0
     max_depth = 12000
     while True:
-        # Find sync frames
-        
         frame = q.get().getCvFrame()
         rgb = qRgb.get().getCvFrame()
 
@@ -104,8 +103,8 @@ with dai.Device(pipeline) as device:
         frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 
 
-        cv2.imshow("disparity_color", frame)
-        cv2.imshow("rgb", rgb)
+        # cv2.imshow("disparity_color", frame)
+        # cv2.imshow("rgb", rgb)
         # Blend rgb and depth
         frame = cv2.addWeighted(frame, 0.8, rgb, 0.2, 0)
         cv2.imshow("blend", frame)
