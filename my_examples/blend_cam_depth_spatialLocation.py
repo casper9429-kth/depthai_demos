@@ -32,13 +32,13 @@ xout_spatial_1.setStreamName("spatialData")
 # Properties
 rgbCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
 rgbCam.setIspScale(1, 5)
-rgbCam.setFps(30)
+rgbCam.setFps(20)
 monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
 monoLeft.setCamera("left")
-monoLeft.setFps(30)
+monoLeft.setFps(20)
 monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
 monoRight.setCamera("right")
-monoRight.setFps(30)
+monoRight.setFps(20)
 # For now, RGB needs fixed focus to properly align with depth.
 # This value was used during calibration
 
@@ -72,8 +72,8 @@ spatialLocationCalculator_1.setWaitForConfigInput(False)
 spatialLocationCalculator_1.inputDepth.setBlocking(False)
 
 # Config spatial calculator
-N = 7
-M = 7
+N = 7 # 14
+M = 7 # 14
 safty_factor = 0.5
 for n in range(N):
     for m in range(M):        
@@ -93,7 +93,7 @@ for n in range(N):
         # lowerLeft = dai.Point2f((n)/N, (m)/M)
         # upperRight = dai.Point2f((n+1)/N, (m+1)/M)
         config = dai.SpatialLocationCalculatorConfigData()
-        config.calculationAlgorithm = dai.SpatialLocationCalculatorAlgorithm.AVERAGE
+        config.calculationAlgorithm = dai.SpatialLocationCalculatorAlgorithm.MEAN
         config.depthThresholds.lowerThreshold = 300
         config.depthThresholds.upperThreshold = 10000
         # set confidence threshold 
@@ -145,11 +145,11 @@ with dai.Device(pipeline) as device:
         frame[frame > max_depth] = max_depth
         frame = np.interp(frame, (min_depth, max_depth), (0, 255)).astype(np.uint8)
         frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-        cv2.imshow("disparity_color", frame)
-        cv2.imshow("rgb", rgb)
+        #cv2.imshow("disparity_color", frame)
+        #cv2.imshow("rgb", rgb)
         # Blend rgb and depth
         frame = cv2.addWeighted(frame, 0.6, rgb, 0.4, 0)
-        cv2.imshow("blend", frame)
+        #cv2.imshow("blend", frame)
 
         # Get spatial data
 
