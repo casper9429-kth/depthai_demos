@@ -145,11 +145,11 @@ with dai.Device(pipeline) as device:
         frame[frame > max_depth] = max_depth
         frame = np.interp(frame, (min_depth, max_depth), (0, 255)).astype(np.uint8)
         frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-        #cv2.imshow("disparity_color", frame)
-        #cv2.imshow("rgb", rgb)
+        cv2.imshow("disparity_color", frame)
+        cv2.imshow("rgb", rgb)
         # Blend rgb and depth
         frame = cv2.addWeighted(frame, 0.6, rgb, 0.4, 0)
-        #cv2.imshow("blend", frame)
+        cv2.imshow("blend", frame)
 
         # Get spatial data
 
