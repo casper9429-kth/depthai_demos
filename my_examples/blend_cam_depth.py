@@ -27,13 +27,12 @@ xout_rgb = pipeline.create(dai.node.XLinkOut)
 xout.setStreamName("depth")
 xout_rgb.setStreamName("rgb")
 # Properties
-rgbCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
-rgbCam.setIspScale(1, 5)
+rgbCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
 rgbCam.setFps(30)
-monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
+monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
 monoLeft.setCamera("left")
 monoLeft.setFps(30)
-monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
+monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
 monoRight.setCamera("right")
 monoRight.setFps(30)
 # For now, RGB needs fixed focus to properly align with depth.
@@ -46,11 +45,13 @@ depth.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 #depth.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
 #depth.initialConfig.setBilateralFilterSigma(1000)
 # Filter invalid points (points with depth equal to 0)
+
 depth.setLeftRightCheck(lr_check)
 depth.setExtendedDisparity(extended_disparity)
 depth.setSubpixel(subpixel)
 depth.setRectifyEdgeFillColor(0) # Black, to better see the cutout
 depth.setDepthAlign(dai.CameraBoardSocket.RGB)
+
 config = depth.initialConfig.get()
 config.postProcessing.speckleFilter.enable = False
 config.postProcessing.speckleFilter.speckleRange = 50
@@ -79,23 +80,20 @@ with dai.Device(pipeline) as device:
     except:
         raise
 
-    # Auto set IrLasers
     device.setIrLaserDotProjectorBrightness(765)
     device.setIrFloodLightBrightness(1500)
     # Output queue will be used to get the disparity frames from the outputs defined above
-    q = device.getOutputQueue(name="depth", maxSize=10, blocking=False)
+    q = device.getOutputQueue(name="depth", maxSize=1, blocking=False)
     qRgb = device.getOutputQueue(name="rgb", maxSize=10, blocking=False)
 
     # Rollig average color for depth map
-    min_depth = 100
+    min_depth = 0
     max_depth = 12000
     while True:
         # Find sync frames
         
-        frame_que = q.get()
-        frame = frame_que.getCvFrame()
-        rgb_que = qRgb.get()
-        rgb = rgb_que.getCvFrame()
+        frame = q.get().getCvFrame()
+        rgb = qRgb.get().getCvFrame()
 
         # Noramlize in 5 to 95 range
         min_depth = np.percentile(frame[frame>0], 5)*0.1 + min_depth*0.9
@@ -109,7 +107,7 @@ with dai.Device(pipeline) as device:
         cv2.imshow("disparity_color", frame)
         cv2.imshow("rgb", rgb)
         # Blend rgb and depth
-        frame = cv2.addWeighted(frame, 0.6, rgb, 0.4, 0)
+        frame = cv2.addWeighted(frame, 0.8, rgb, 0.2, 0)
         cv2.imshow("blend", frame)
 
 

@@ -15,9 +15,10 @@ import blobconverter
 # yolov8n_trained.json
 # . .
 # .
+# We need to use the json file to parse the model and get the input size, anchors, etc.
+# The blob file is the model itself, and we need to use it to create the neural network node.
 
-
-# Config path and model path
+# Config path and model path: change to your own paths
 configPath = '/home/casper/depthai_demos/my_examples/models/result_low_res/yolov8n_coco.json'
 nnPath = "/home/casper/depthai_demos/my_examples/models/result_low_res/yolov8n_coco_openvino_2022.1_6shave.blob"#args.model
 
