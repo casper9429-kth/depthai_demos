@@ -193,11 +193,11 @@ with dai.Device(pipeline) as device:
             # roi = roi.denormalize(depthFrameColor.shape[1], depthFrameColor.shape[0])
             # topLeft = roi.topLeft()
             # bottomRight = roi.bottomRight()
-            # # xmin = int(topLeft.x)
+            # xmin = int(topLeft.x)
             # ymin = int(topLeft.y)
             # xmax = int(bottomRight.x)
             # ymax = int(bottomRight.y)
-            # cv2.rectangle(depthFrameColor, (xmin, ymin), (xmax, ymax), color, 1)
+            # cv2.rectangle(depthFrameColor, (xmin, ymin), (xmax, ymax), color, 4)
 
             # Denormalize bounding box
             x1 = int(detection.xmin * width)
@@ -216,7 +216,7 @@ with dai.Device(pipeline) as device:
 
 
         cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
-        #cv2.imshow("depth", depthFrameColor)
+        # cv2.imshow("depth", depthFrameColor)
         #cv2.imshow("rgb", frame)
         # Blend RGB and Depth
         frame = cv2.addWeighted(frame, 0.7, depthFrameColor, 0.3, 0)
