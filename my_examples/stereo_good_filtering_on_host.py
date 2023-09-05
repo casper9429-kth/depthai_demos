@@ -1,3 +1,5 @@
+# Works ok on oak d lite
+
 import numpy as np
 import cv2
 import depthai as dai
@@ -7,10 +9,10 @@ pipeline = dai.Pipeline()
 
 # Define sources 
 monoLeft = pipeline.create(dai.node.MonoCamera)
-monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
 monoRight = pipeline.create(dai.node.MonoCamera)
-monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
 
 # Create StereoDepth node and set defaults
@@ -22,6 +24,19 @@ stereo.setConfidenceThreshold(255)
 stereo.setLeftRightCheck(True)
 stereo.setExtendedDisparity(False)
 stereo.setSubpixel(True)
+
+config = stereo.initialConfig.get()
+config.postProcessing.speckleFilter.enable = False
+config.postProcessing.speckleFilter.speckleRange = 50
+config.postProcessing.temporalFilter.enable = True
+config.postProcessing.spatialFilter.enable = True
+config.postProcessing.spatialFilter.holeFillingRadius = 2
+config.postProcessing.spatialFilter.numIterations = 1
+config.postProcessing.thresholdFilter.minRange = 100
+config.postProcessing.thresholdFilter.maxRange = 15000
+config.postProcessing.decimationFilter.decimationFactor = 1
+stereo.initialConfig.set(config)
+
 
 
 
@@ -48,10 +63,12 @@ with dai.Device(pipeline) as device:
     # confidenceQueue = device.getOutputQueue(name="confidence", maxSize=4, blocking=False)
     confidenceQueue = device.getOutputQueue(name="confidence", maxSize=4, blocking=False)
     
-    # Enable Laser dot projector on OAK D pro
-    device.setIrLaserDotProjectorBrightness(700)
+    # Enable Laser dot projector on OAK D pro: 
+    device.setIrLaserDotProjectorBrightness(765)
+    device.setIrFloodLightBrightness(1500)
     min_avg = -1
     max_avg = -1
+
     while True:
         # Confidence threshold
         threshold = 5
@@ -60,6 +77,10 @@ with dai.Device(pipeline) as device:
         depth = depthQueue.get()
         depthFrame = depth.getFrame()
         
+        # Check if depth frame contains valid data
+        sum = np.sum(depthFrame==0)
+        if sum > 0.7*depthFrame.shape[0]*depthFrame.shape[1]:
+            continue
         # Get the confidence frame
         confidence = confidenceQueue.get()
         confidenceFrame = confidence.getFrame()
@@ -87,9 +108,8 @@ with dai.Device(pipeline) as device:
         
         
         depthFrame = new_depth_frame
-        
-        # get 95 and 5 percentile of depth frame
-        if min_avg == -1:
+
+        if min_avg == -1:        
             min_avg = np.percentile(depthFrame[depthFrame>0], 2)
         else:
             min_avg = min_avg*0.8 + np.percentile(depthFrame[depthFrame>0], 2)*0.2

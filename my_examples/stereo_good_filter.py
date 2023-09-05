@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Works good on oak d pro with active ir projector
+# Not enough for oak d lite
 
 import cv2
 import depthai as dai
@@ -46,10 +48,9 @@ config.postProcessing.temporalFilter.enable = True
 config.postProcessing.spatialFilter.enable = True
 config.postProcessing.spatialFilter.holeFillingRadius = 2
 config.postProcessing.spatialFilter.numIterations = 1
-config.postProcessing.thresholdFilter.minRange = 400
+config.postProcessing.thresholdFilter.minRange = 100
 config.postProcessing.thresholdFilter.maxRange = 15000
 config.postProcessing.decimationFilter.decimationFactor = 1
-# sigma filter
 depth.initialConfig.set(config)
 
 # Linking
@@ -59,8 +60,8 @@ depth.depth.link(xout.input)
 
 # Connect to device and start pipeline
 with dai.Device(pipeline) as device:
-    device.setIrLaserDotProjectorBrightness(700)
-
+    device.setIrLaserDotProjectorBrightness(765)
+    device.setIrFloodLightBrightness(1500)
     # Output queue will be used to get the disparity frames from the outputs defined above
     q = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
 
@@ -71,12 +72,14 @@ with dai.Device(pipeline) as device:
     while True:
         inDisparity = q.get()  # blocking call, will wait until a new data has arrived
         frame = inDisparity.getCvFrame()
-
-        # Get 5 and 95 percentiles for better visualization
+        # Remove 10 points at all edges
+        frame = frame[10:-10, 10:-10]
 
         # Noramlize in 5 to 95 range
-        min_depth = np.percentile(frame[frame>0], 10)*0.1 + min_depth*0.9
-        max_depth = np.percentile(frame[frame>0], 90)*0.1 + max_depth*0.9
+        min_depth = np.percentile(frame[frame>0], 5)*0.1 + min_depth*0.9
+        max_depth = np.percentile(frame[frame>0], 95)*0.1 + max_depth*0.9
+        frame[frame < min_depth] = min_depth
+        frame[frame > max_depth] = max_depth
         frame = np.interp(frame, (min_depth, max_depth), (0, 255)).astype(np.uint8)
         frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
         cv2.imshow("disparity_color", frame)
