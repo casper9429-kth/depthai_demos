@@ -42,7 +42,6 @@ spatialLocationCalculator = pipeline.create(dai.node.SpatialLocationCalculator)
 spatialLocationCalculator.setWaitForConfigInput(False)
 spatialLocationCalculator.inputDepth.setBlocking(False)
 # No config options for now, depth is already set by StereoDepth node
-spatialLocationCalculator.setWaitForConfigInput(False)
 
 # Create XLinkOut nodes
 xoutDepth = pipeline.create(dai.node.XLinkOut)
