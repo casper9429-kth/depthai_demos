@@ -8,13 +8,14 @@ import argparse
 import json
 import blobconverter
 
+
+## Use yolov8n model converted to blob in https://tools.luxonis.com/
 # parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--model", help="Provide model name or model path for inference",
                     default='/home/casper/depthai_demos/my_examples/models/result/yolov8n_trained_openvino_2022.1_6shave.blob', type=str)
 parser.add_argument("-c", "--config", help="Provide config path for inference",
                     default='/home/casper/depthai_demos/my_examples/models/result/yolov8n_trained.json', type=str)
-
 args = parser.parse_args()
 
 # parse config
@@ -50,8 +51,6 @@ nnPath = args.model
 if not Path(nnPath).exists():
     print("No blob found at {}. Looking into DepthAI model zoo.".format(nnPath))
     nnPath = str(blobconverter.from_zoo(args.model, shaves = 6, zoo_type = "depthai", use_cache=True))
-# sync outputs
-syncNN = True
 
 # Create pipeline
 pipeline = dai.Pipeline()
@@ -68,9 +67,11 @@ nnOut.setStreamName("nn")
 # Properties
 camRgb.setPreviewSize(W, H)
 
+
 camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
 camRgb.setInterleaved(False)
 camRgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
+camRgb.setPreviewKeepAspectRatio(False)
 camRgb.setFps(40)
 
 # Network specific settings
@@ -115,8 +116,15 @@ with dai.Device(pipeline) as device:
             cv2.putText(frame, labels[detection.label], (bbox[0] + 10, bbox[1] + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
             cv2.putText(frame, f"{int(detection.confidence * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
             cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
+
+        frame = cv2.resize(frame, (0, 0), fy=1080/W, fx=1920/H)        
         # Show the frame
         cv2.imshow(name, frame)
+    
+    def undistort(frame,scale_x,scale_y):
+        frame = np.array(frame)
+        frame = cv2.resize(frame, (0, 0), fx=scale_x, fy=scale_y)
+        return frame
 
     while True:
         inRgb = qRgb.get()
