@@ -202,7 +202,7 @@ with dai.Device(pipeline) as device:
         depth = depthQueue.get()
         inNN = networkQueue.get()
         gridCells = spatialCalcQueue.get().getSpatialLocations()
-                
+        
 
         if printOutputLayersOnce:
             toPrint = 'Output layer names:'
@@ -211,9 +211,14 @@ with dai.Device(pipeline) as device:
             print(toPrint)
             printOutputLayersOnce = False
 
+
+
         frame = inPreview.getCvFrame()
         depthFrame = depth.getFrame() # depthFrame values are in millimeters
         depth_downscaled = depthFrame[::4] # Faster computation        
+        if (depth_downscaled == 0).all():
+            continue
+        
         min_depth = 0.1*np.percentile(depth_downscaled[depth_downscaled != 0], 5) + 0.9*min_depth # Rolling average 
         max_depth = 0.1*np.percentile(depth_downscaled, 95) + 0.9*max_depth                       # Rolling average
         depthFrameColor = np.interp(depthFrame, (min_depth, max_depth), (0, 255)).astype(np.uint8)
