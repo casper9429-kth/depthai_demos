@@ -10,11 +10,13 @@ import argparse
 import json
 import blobconverter
 
-'''
-Spatial Tiny-yolo example
-  Performs inference on RGB camera and retrieves spatial location coordinates: x,y,z relative to the center of depth map.
-  Can be used for tiny-yolo-v3 or tiny-yolo-v4 networks
-'''
+"""
+This script shows how to:
+* Use the neural network to detect objects on RGB camera and get spatial location coordinates: x,y,z relative to the center of depth map.
+* Use the spatial location coordinates to find the closest object to the camera.
+* Create a depth map from the stereo pair.
+* Blend the RGB and depth frames.
+"""
 
 # Config path and model path: change to your own paths
 configPath = '/home/casper/depthai_demos/my_examples/models/result_low_res/yolov8n_coco.json'
