@@ -29,9 +29,9 @@ curr_path = Path(__file__).resolve().parent
 configPath = str(curr_path) + '/models/result_low_res/yolov8n_coco.json'
 nnPath = str(curr_path) + '/models/result_low_res/yolov8n_coco_openvino_2022.1_6shave.blob'
 
-#Own fork model
-configPath = str(curr_path) + '/models/fork_classifier/best.json'
-nnPath = str(curr_path) + '/models/fork_classifier/best.blob'
+#Own fork model - it sucks. Label for the fork class is "fork")
+# configPath = str(curr_path) + '/models/fork_classifier/best.json'
+# nnPath = str(curr_path) + '/models/fork_classifier/best.blob'
 
 # parse config
 with Path(configPath).open() as f:
@@ -138,12 +138,14 @@ spatialDetectionNetwork.input.setBlocking(False)
 ## Object tracker speficic parameters
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/object_tracker/ 
 #Get the index of the person class in labels
-ObjectOfInterest = "Fork"
+ObjectOfInterest = "fork"
 IndexOfInterest = labelMap.index(ObjectOfInterest)
 objectTracker.setDetectionLabelsToTrack([IndexOfInterest]) # Track only person
 # possible tracking types: ZERO_TERM_COLOR_HISTOGRAM, ZERO_TERM_IMAGELESS, SHORT_TERM_IMAGELESS, SHORT_TERM_KCF
 objectTracker.setTrackerType(dai.TrackerType.ZERO_TERM_COLOR_HISTOGRAM)
 # take the smallest ID when new object is tracked, possible options: SMALLEST_ID, UNIQUE_ID
+#UNIQUE_ID will never assign an already assigned ID to a new object. Sounds good in theory, but if it loses the object and then redetects it it will have a completely new ID. Only issue with this is that the number of ID's will grow over time.
+# SMALLEST_ID will assign the smallest free ID to a new detection. This means that if a detection is lost that ID is "freed up" and can be reused.
 objectTracker.setTrackerIdAssignmentPolicy(dai.TrackerIdAssignmentPolicy.SMALLEST_ID)
 
 
