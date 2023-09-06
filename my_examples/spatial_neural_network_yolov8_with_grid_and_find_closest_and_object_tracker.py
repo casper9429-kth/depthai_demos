@@ -135,7 +135,7 @@ spatialDetectionNetwork.input.setBlocking(False)
 ## Object tracker speficic parameters
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/object_tracker/ 
 #Get the index of the person class in labels
-ObjectOfInterest = "person"
+ObjectOfInterest = "spoon"
 IndexOfInterest = labelMap.index(ObjectOfInterest)
 objectTracker.setDetectionLabelsToTrack([IndexOfInterest]) # Track only person
 # possible tracking types: ZERO_TERM_COLOR_HISTOGRAM, ZERO_TERM_IMAGELESS, SHORT_TERM_IMAGELESS, SHORT_TERM_KCF
@@ -364,9 +364,9 @@ with dai.Device(pipeline,usb2Mode=True) as device:
             cv2.putText(frameOT, f"ID: {[t.id]}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
             cv2.putText(frameOT, t.status.name, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
             cv2.rectangle(frameOT, (x1, y1), (x2, y2), color, cv2.FONT_HERSHEY_SIMPLEX)
-            cv2.putText(frameOT, f"X: {int(t.spatialCoordinates.x)} mm", (x1 + 10, y1 + 65), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-            cv2.putText(frameOT, f"Y: {int(t.spatialCoordinates.y)} mm", (x1 + 10, y1 + 80), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-            cv2.putText(frameOT, f"Z: {int(t.spatialCoordinates.z)} mm", (x1 + 10, y1 + 95), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            # cv2.putText(frameOT, f"X: {int(t.spatialCoordinates.x)} mm", (x1 + 10, y1 + 65), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            # cv2.putText(frameOT, f"Y: {int(t.spatialCoordinates.y)} mm", (x1 + 10, y1 + 80), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            # cv2.putText(frameOT, f"Z: {int(t.spatialCoordinates.z)} mm", (x1 + 10, y1 + 95), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
 
         cv2.putText(frameOT, "NN fps: {:.2f}".format(fps), (2, frameOT.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
         cv2.putText(frameOT, "# tracklets: {:.2f}".format(len(trackletsData)), (frameOT.shape[1]-150, (frameOT.shape[0] - 4)), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
