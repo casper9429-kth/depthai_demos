@@ -136,7 +136,7 @@ spatialDetectionNetwork.input.setBlocking(False)
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/object_tracker/ 
 #Get the index of the person class in labels
 ObjectOfInterest = "person"
-IndexOfInterest = labels.index(ObjectOfInterest)
+IndexOfInterest = labelMap.index(ObjectOfInterest)
 objectTracker.setDetectionLabelsToTrack([IndexOfInterest]) # Track only person
 # possible tracking types: ZERO_TERM_COLOR_HISTOGRAM, ZERO_TERM_IMAGELESS, SHORT_TERM_IMAGELESS, SHORT_TERM_KCF
 objectTracker.setTrackerType(dai.TrackerType.ZERO_TERM_COLOR_HISTOGRAM)
@@ -237,6 +237,8 @@ with dai.Device(pipeline,usb2Mode=True) as device:
         depth = depthQueue.get()
         inNN = networkQueue.get()
         gridCells = spatialCalcQueue.get().getSpatialLocations()
+        inPreviewOT = previewOTQueue.get()
+        inTracklets = trackletsQueue.get()
         
 
         if printOutputLayersOnce:
@@ -342,7 +344,33 @@ with dai.Device(pipeline,usb2Mode=True) as device:
         cv2.putText(frame, "Closest grid cell", (xmin + 10, ymin + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color)
         cv2.imshow("rgb_with_grid", frame)
 
+        # Object tracking window
+        frameOT = inPreviewOT.getCvFrame()
+        colorOT = (255,0,0)
+        trackletsData = inTracklets.tracklets
+        for t in trackletsData:
+            roi = t.roi.denormalize(frameOT.shape[1], frameOT.shape[0])
+            x1 = int(roi.topLeft().x)
+            y1 = int(roi.topLeft().y)
+            x2 = int(roi.bottomRight().x)
+            y2 = int(roi.bottomRight().y)
 
+            try:
+                label = labelMap[t.label]
+            except:
+                label = t.label
+
+            cv2.putText(frameOT, str(label), (x1 + 10, y1 + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            cv2.putText(frameOT, f"ID: {[t.id]}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            cv2.putText(frameOT, t.status.name, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            cv2.rectangle(frameOT, (x1, y1), (x2, y2), color, cv2.FONT_HERSHEY_SIMPLEX)
+            cv2.putText(frameOT, f"X: {int(t.spatialCoordinates.x)} mm", (x1 + 10, y1 + 65), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            cv2.putText(frameOT, f"Y: {int(t.spatialCoordinates.y)} mm", (x1 + 10, y1 + 80), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+            cv2.putText(frameOT, f"Z: {int(t.spatialCoordinates.z)} mm", (x1 + 10, y1 + 95), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+
+        cv2.putText(frameOT, "NN fps: {:.2f}".format(fps), (2, frameOT.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
+        cv2.putText(frameOT, "# tracklets: {:.2f}".format(len(trackletsData)), (frameOT.shape[1]-150, (frameOT.shape[0] - 4)), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
+        cv2.imshow("tracker", frameOT)
 
         if cv2.waitKey(1) == ord('q'):
             break
