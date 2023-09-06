@@ -9,6 +9,7 @@ import time
 import argparse
 import json
 import blobconverter
+from datetime import datetime
 
 """
 This script shows how to:
@@ -17,6 +18,15 @@ This script shows how to:
 * Create a depth map from the stereo pair.
 * Blend the RGB and depth frames.
 """
+
+##-- TOP LEVEL PARAMETERS --## 
+# Sync pictures and NN output
+syncNN = True
+
+# Collect dataset
+collect_dataset = True #Set True if you want to collect new dataset images while running everything else. 
+
+##-- END OF TOP LEVEL PARAMETERS --##
 
 # Config path and model path: change to your own paths
 #Get path to this file
@@ -56,9 +66,6 @@ nnMappings = config.get("mappings", {})
 labels = nnMappings.get("labels", {})
 labelMap = labels
 
-# Sync pictures and NN output
-syncNN = True
-
 # Create pipeline
 pipeline = dai.Pipeline()
 
@@ -73,6 +80,7 @@ objectTracker = pipeline.create(dai.node.ObjectTracker)
 
 # Create outputs
 xoutRgb = pipeline.create(dai.node.XLinkOut)
+xoutRgbInputToNN = pipeline.create(dai.node.XLinkOut) #The reason for creating a "new" separate input is because below the passthrough of of the NN is linked to xoutRgb. We want what goes into the NN to be collected as new dataset. (Probably would be fine, but since there's some "black magic" going on with the OAK D nodes I prefer this approach :-) /Kurreman)
 xoutNN = pipeline.create(dai.node.XLinkOut)
 xoutDepth = pipeline.create(dai.node.XLinkOut)
 xoutOT = pipeline.create(dai.node.XLinkOut)
@@ -81,6 +89,7 @@ trackerOut = pipeline.create(dai.node.XLinkOut)
 
 # Set names for streams
 xoutRgb.setStreamName("rgb")
+xoutRgbInputToNN.setStreamName("rgbInputToNN") 
 xoutNN.setStreamName("detections")
 xoutDepth.setStreamName("depth")
 nnNetworkOut.setStreamName("nnNetwork")
@@ -156,13 +165,12 @@ spatialLocationCalculator.inputDepth.setBlocking(False)
 xoutSpatialData = pipeline.create(dai.node.XLinkOut)
 xoutSpatialData.setStreamName("gridData")
 
-
-
 # Linking
 monoLeft.out.link(stereo.left)
 monoRight.out.link(stereo.right)
 
 camRgb.preview.link(spatialDetectionNetwork.input)
+camRgb.preview.link(xoutRgbInputToNN.input)
 if syncNN:
     spatialDetectionNetwork.passthrough.link(xoutRgb.input)
 else:
@@ -228,6 +236,7 @@ with dai.Device(pipeline,usb2Mode=True) as device:
     spatialCalcQueue = device.getOutputQueue(name="gridData", maxSize=4, blocking=False)
     trackletsQueue = device.getOutputQueue(name="tracklets", maxSize=4, blocking=False)
     previewOTQueue = device.getOutputQueue(name="preview_ot", maxSize=4, blocking=False)
+    rgbIntoNNPreviewQueue = device.getOutputQueue(name="rgbInputToNN", maxSize=4, blocking=False)
 
     startTime = time.monotonic()
     counter = 0
@@ -253,6 +262,17 @@ with dai.Device(pipeline,usb2Mode=True) as device:
             print(toPrint)
             printOutputLayersOnce = False
 
+        # ---- Collect dataset if flag is set ----- 
+        if collect_dataset:
+            inPreviewIntoNN = rgbIntoNNPreviewQueue.get()
+            frame = inPreview.getCvFrame()
+            output_folder = str(curr_path) + "/raw_pics/" #Change this when mounting separate drive on Ubuntu system. Find proven example code here: https://bitbucket.org/nordluft/single_tree_forestry/src/main/OAK/take_pictures.py
+            # Save the RGB frame to a file
+            # get time stamp
+            timestamp = int(datetime.now().timestamp())
+            file_name = output_folder + "rgb_frame"+ str(timestamp) +".jpg"
+            cv2.imwrite(file_name, frame)
+        # ---- End of dataset collection ---- 
 
 
         frame = inPreview.getCvFrame()
