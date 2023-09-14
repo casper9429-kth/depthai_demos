@@ -53,6 +53,10 @@ curr_path = Path(__file__).resolve().parent
 # Import here
 configPath = str(curr_path) + '/models/yoloyv8s_416_320_4shaves/yolov8s.json'
 nnPath = str(curr_path) + '/models/yoloyv8s_416_320_4shaves/yolov8s_openvino_2022.1_4shave.blob'
+# configPath = str(curr_path) + '/models/yolov8m_416_320_6shaves/yolov8m.json'
+# nnPath = str(curr_path) + '/models/yolov8m_416_320_6shaves/yolov8m_openvino_2022.1_6shave.blob'
+
+
 
 # parse config
 with Path(configPath).open() as f:

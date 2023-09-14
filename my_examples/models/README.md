@@ -27,3 +27,5 @@ possible resolutions:
 ```
 
 Experiment with different amounts of shaves and different resolutions to find the best combination of speed and accuracy.
+
+According to my experiments, the best resolution for oak d lite is 416x320 and 4 shaves together with yolov8s, giving 10-15 fps. 
