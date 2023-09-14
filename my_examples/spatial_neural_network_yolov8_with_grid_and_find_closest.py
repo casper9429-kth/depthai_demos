@@ -183,11 +183,11 @@ with dai.Device(pipeline) as device:
     #device.setIrFloodLightBrightness(1500)
 
     # Output queues will be used to get the rgb frames and nn data from the outputs defined above
-    previewQueue = device.getOutputQueue(name="rgb", maxSize=4, blocking=False)
-    detectionNNQueue = device.getOutputQueue(name="detections", maxSize=4, blocking=False)
-    depthQueue = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
-    networkQueue = device.getOutputQueue(name="nnNetwork", maxSize=4, blocking=False)
-    spatialCalcQueue = device.getOutputQueue(name="gridData", maxSize=4, blocking=False)
+    previewQueue = device.getOutputQueue(name="rgb", maxSize=2, blocking=False)
+    detectionNNQueue = device.getOutputQueue(name="detections", maxSize=2, blocking=False)
+    depthQueue = device.getOutputQueue(name="depth", maxSize=2, blocking=False)
+    networkQueue = device.getOutputQueue(name="nnNetwork", maxSize=2, blocking=False)
+    spatialCalcQueue = device.getOutputQueue(name="gridData", maxSize=2, blocking=False)
 
     startTime = time.monotonic()
     counter = 0
@@ -203,6 +203,10 @@ with dai.Device(pipeline) as device:
         inNN = networkQueue.get()
         gridCells = spatialCalcQueue.get().getSpatialLocations()
         
+        # Print device used memory and proccessing power 
+        mem = device.getCmxMemoryUsage()
+        print(mem.used)
+        print(mem.total)
 
         if printOutputLayersOnce:
             toPrint = 'Output layer names:'
