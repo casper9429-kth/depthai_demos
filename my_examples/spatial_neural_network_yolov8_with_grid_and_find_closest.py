@@ -19,8 +19,15 @@ This script shows how to:
 """
 
 # Config path and model path: change to your own paths
-configPath = '/home/casper/depthai_demos/my_examples/models/result_low_res/yolov8n_coco.json'
-nnPath = "/home/casper/depthai_demos/my_examples/models/result_low_res/yolov8n_coco_openvino_2022.1_6shave.blob"#args.model
+#Get path to this file
+curr_path = Path(__file__).resolve().parent
+
+# configPath = '/home/casper/depthai_demos/my_examples/models/result_low_res/yolov8n_coco.json'
+# nnPath = "/home/casper/depthai_demos/my_examples/models/result_low_res/yolov8n_coco_openvino_2022.1_6shave.blob"#args.model
+
+#Using the curr_path variable, get the below paths dynamically
+configPath = str(curr_path) + '/models/result_low_res/yolov8n_coco.json'
+nnPath = str(curr_path) + '/models/result_low_res/yolov8n_coco_openvino_2022.1_6shave.blob'
 
 
 # parse config
@@ -178,7 +185,7 @@ for n in range(N):
 
 
 # Connect to device and start pipeline
-with dai.Device(pipeline) as device:
+with dai.Device(pipeline,usb2Mode=True) as device:
     device.setIrLaserDotProjectorBrightness(765)
     #device.setIrFloodLightBrightness(1500)
 
